@@ -21,7 +21,8 @@ import Control.Monad.Trans.State
 --   countRange 1 3 [1,2,3,4,5] ==> 3
 
 countRange :: Int -> Int -> [Int] -> Int
-countRange low high is = undefined
+countRange low high is = length (filter range is)
+  where range number = number >= low && number <= high
 
 ------------------------------------------------------------------------------
 -- Ex 2: Build a string that looks like an n*m chessboard:
@@ -40,6 +41,14 @@ countRange low high is = undefined
 
 chess :: Int -> Int -> String
 chess = undefined
+-- chess 0 y = ""
+-- chess x 0 = ""
+-- chess 1 1 = "#\n"
+-- chess x y = unlines (help x y)
+--   where help _ 0  = [] 
+--         help x y = if div y 2 then help x (y-1) [replicate (x-1) '.#'] ++'\n'
+--                    else [replicate (x-1) '#.'] ++ '\n'
+
 
 ------------------------------------------------------------------------------
 -- Ex 3: Implement the function palindromify that chops a character
@@ -53,8 +62,10 @@ chess = undefined
 --   palindromify "abracacabra" ==> "acaca"
 
 palindromify :: String -> String
-palindromify = undefined
-
+palindromify [x] = ""
+palindromify text = if isPalindrome text then text
+                    else palindromify ( take (length text -2 ) (tail text))
+                      where isPalindrome xs = reverse xs == xs
 ------------------------------------------------------------------------------
 -- Ex 4: Remove all repetitions of elements in a list. That is, if an
 -- element occurs in the input list 2 or more times in a row, replace
@@ -71,7 +82,10 @@ palindromify = undefined
 --   unrepeat [1,1,2,1,3,3,3] => [1,2,1,3]
 
 unrepeat :: Eq a => [a] -> [a]
-unrepeat = undefined
+unrepeat [] = []
+unrepeat [x] = [x]
+unrepeat (x:s:xs) = if x == s then unrepeat (s:xs)
+                    else x : unrepeat (s:xs)
 
 ------------------------------------------------------------------------------
 -- Ex 5: Given a list of Either String Int, sum all the integers.
@@ -83,6 +97,13 @@ unrepeat = undefined
 
 sumEithers :: [Either String Int] -> Maybe Int
 sumEithers = undefined
+-- -- -- sumEithers [] = Nothing
+-- -- -- sumEithers xs
+-- -- --   |(length (filter isRight xs) < 1) = Nothing
+-- -- --   |otherwise = Just (sum (filter isRight xs))
+-- -- --     where isRight (Left _) = False
+-- -- --           isRight (Right _) = True
+   
 
 ------------------------------------------------------------------------------
 -- Ex 6: Define the data structure Shape with values that can be
@@ -99,17 +120,18 @@ sumEithers = undefined
 --
 -- All dimensions should be Doubles.
 
-data Shape = Undefined
+data Shape = Circle Double| Rectangle Double Double
   deriving Show -- leave this line in place
 
 circle :: Double -> Shape
-circle = undefined
+circle radius = Circle radius
 
 rectangle :: Double -> Double -> Shape
-rectangle = undefined
+rectangle width height = Rectangle width height
 
 area :: Shape -> Double
-area = undefined
+area (Circle r) = pi * r ^ 2
+area (Rectangle a b) = a*b
 
 ------------------------------------------------------------------------------
 -- Ex 7: Here's a Card type for a deck of cards with just two suits
@@ -128,10 +150,26 @@ data Card = Heart Int | Spade Int | Joker
   deriving Show
 
 instance Eq Card where
-  a == b = undefined -- implement me!
+  (Heart x) == (Heart y) = x == y
+  (Spade x) == (Spade y) = x == y
+  Joker == Joker         = True
+  _     == _             = False
 
 instance Ord Card where
-  -- implement me!
+  (Spade x) <= (Heart y) = True
+  (Heart x) <= Joker = True
+  (Spade x) <= Joker = True
+  Spade x <= Spade y
+    | x<y = True
+    | y>x = False
+  Heart x <= Heart y
+    | x<y = True
+    | y>x = False
+  x <= y        = x == y
+
+  
+
+  
 
 ------------------------------------------------------------------------------
 -- Ex 8: Here's a type Twos for things that always come in pairs. It's

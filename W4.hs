@@ -26,14 +26,14 @@ import System.IO
 -- first line should be HELLO and the second one WORLD
 
 hello :: IO ()
-hello = undefined
+hello = putStrLn "HELLO \nWORLD"
 
 ------------------------------------------------------------------------------
 -- Ex 2: define the IO operation greet that takes a name as an
 -- argument and prints a line "HELLO name".
 
 greet :: String -> IO ()
-greet name = undefined
+greet name = putStrLn $ "Hello " ++name
 
 ------------------------------------------------------------------------------
 -- Ex 3: define the IO operation greet2 that reads a name from the
@@ -43,7 +43,9 @@ greet name = undefined
 -- Try to use the greet operation in your solution.
 
 greet2 :: IO ()
-greet2 = undefined
+greet2 = do
+  s <- getLine
+  greet s
 
 ------------------------------------------------------------------------------
 -- Ex 4: define the IO operation getSum that reads two numbers, on
@@ -52,14 +54,19 @@ greet2 = undefined
 -- Remember the operation readLn.
 
 getSum :: IO Int
-getSum = undefined
+getSum = do
+  x <- readLn
+  y <- readLn
+  return (x+y)
+  
 
 ------------------------------------------------------------------------------
 -- Ex 5: define the IO operation readWords n which reads n lines from
 -- the user and returns them in alphabetical order.
 
 readWords :: Int -> IO [String]
-readWords n = undefined
+readWords n = do xs <- replicateM n getLine
+                 return (sort xs) 
 
 ------------------------------------------------------------------------------
 -- Ex 6: define the IO operation readUntil f, which reads lines from
@@ -71,7 +78,11 @@ readWords n = undefined
 -- recursive helper operation).
 
 readUntil :: (String -> Bool) -> IO [String]
-readUntil f = undefined
+readUntil f = do input <- getLine
+                 if (f input) == True then return []
+                 else do minput <- readUntil f
+                         return (input:minput)
+                
 
 ------------------------------------------------------------------------------
 -- Ex 7: isums n should read n numbers from the user and return their
@@ -81,7 +92,11 @@ readUntil f = undefined
 -- Reminder: do not use IORef
 
 isums :: Int -> IO Int
-isums n = undefined
+isums n = help n 0
+  where help 0 x = return x
+        help n x = do s <- readLn
+                      return (x+s)
+                      help (n-1) (x+s)
 
 ------------------------------------------------------------------------------
 -- Ex 8: when is a useful function, but its first argument has type
@@ -89,7 +104,8 @@ isums n = undefined
 -- argument has type IO Bool.
 
 whenM :: IO Bool -> IO () -> IO ()
-whenM cond op = undefined
+whenM cond op = do check <- cond
+                   when check op
 
 ------------------------------------------------------------------------------
 -- Ex 9: implement the while loop. while condition operation should
@@ -107,7 +123,7 @@ whenM cond op = undefined
 -- This prints YAY! as long as the user keeps answering Y
 
 while :: IO Bool -> IO () -> IO ()
-while cond op = undefined
+while cond op = whenM cond op
 
 ------------------------------------------------------------------------------
 -- Ex 10: given a string and an IO operation, print the string, run
@@ -127,7 +143,10 @@ while cond op = undefined
 --     4. returns the line read from the user
 
 debug :: String -> IO a -> IO a
-debug s op = undefined
+debug s op = do putStr s
+                x <- op
+                putStr s
+                return x
 
 ------------------------------------------------------------------------------
 -- Ex 11: Reimplement mapM_ (specialized to the IO type) using
@@ -140,14 +159,19 @@ debug s op = undefined
 -- Remember to use `return ()` so that you get the type right!
 
 mymapM_ :: (a -> IO b) -> [a] -> IO ()
-mymapM_ = undefined
+mymapM_ op [] = return ()
+mymapM_ op (x:xs) = do op x
+                       mymapM_ op xs
 
 ------------------------------------------------------------------------------
 -- Ex 12: Reimplement the function forM using pattern matching and
 -- recursion.
 
 myforM :: [a] -> (a -> IO b) -> IO [b]
-myforM as f = undefined
+myforM [] f = return []
+myforM (a:as) f = do x <- f a
+                     xs <- myforM as f
+                     return (x:xs)
 
 ------------------------------------------------------------------------------
 -- Ex 13: sometimes one bumps into IO operations that return IO
@@ -173,7 +197,9 @@ myforM as f = undefined
 --        replicateM l getLine
 
 doubleCall :: IO (IO a) -> IO a
-doubleCall op = undefined
+doubleCall op = do x <- op
+                   y <- x
+                   return y
 
 ------------------------------------------------------------------------------
 -- Ex 14: implement the analogue of function composition (the (.)
@@ -192,7 +218,9 @@ doubleCall op = undefined
 --   3. return the result (of type b)
 
 compose :: (a -> IO b) -> (c -> IO a) -> c -> IO b
-compose op1 op2 c = undefined
+compose op1 op2 c = do a <- op2 c
+                       b <- op1 a
+                       return b
 
 ------------------------------------------------------------------------------
 -- Ex 15: This exercises is about IORefs and operations that return
@@ -218,7 +246,12 @@ compose op1 op2 c = undefined
 --  4
 
 mkCounter :: IO (IO (), IO Int)
-mkCounter = undefined
+mkCounter = do 
+  ioref <- newIORef 0
+  let get = readIORef ioref
+      inc = modifyIORef ioref (+1)
+  return (inc,get)
+               
 
 ------------------------------------------------------------------------------
 -- Ex 16: fetch from the given file (Handle) the lines with the given

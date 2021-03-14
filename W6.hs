@@ -42,18 +42,21 @@ readNames s =
 -- (NB! There are obviously other corner cases like the inputs " " and
 -- "a b c", but you don't need to worry about those here)
 split :: String -> Maybe (String,String)
-split s = undefined
-
+split s = case break (==' ') s of (a,' ':b) -> Just (a,b)
+                                  _         -> Nothing
+ 
 -- checkDuplacate should take a pair of two strings and return Nothing
 -- if they are the same. Otherwise the strings are returned.
 checkDuplicate :: (String, String) -> Maybe (String, String)
-checkDuplicate (for,sur) = undefined
+checkDuplicate (for,sur) = if (for == sur) then Nothing 
+                           else Just (for,sur)
 
 -- checkCapitals should take a pair of two strings and return them
 -- unchanged if both start with a capital letter. Otherwise Nothing is
 -- returned.
 checkCapitals :: (String, String) -> Maybe (String, String)
-checkCapitals (for,sur) = undefined
+checkCapitals (for,sur) = if isUpper (for!!0) && isUpper (sur!!0) then Just (for,sur)
+                          else Nothing                                      
 
 ------------------------------------------------------------------------------
 -- Ex 2: implement a function myDrop that works just like drop, but
@@ -77,7 +80,11 @@ checkCapitals (for,sur) = undefined
 --    ==> Nothing
 
 myDrop :: Maybe Int -> Maybe [a] -> Maybe [a]
-myDrop mi ml = undefined
+myDrop mi ml = do n <- mi
+                  ls <- ml
+                  when (n > length ls) $ Nothing
+                  when (n < 0) $ Nothing
+                  return $ drop n ls
 
 ------------------------------------------------------------------------------
 -- Ex 3: given a list of values and a list of indices, return the sum
@@ -97,7 +104,13 @@ myDrop mi ml = undefined
 --    Nothing
 
 selectSum :: Num a => [a] -> [Int] -> Maybe a
-selectSum xs is = undefined
+selectSum xs is = liftM sum (mapM (safeIndex xs) is)
+
+
+safeIndex :: [a] -> Int -> Maybe a
+safeIndex [] xs = Nothing
+safeIndex (x:xs) 0 = Just x
+safeIndex (x:xs) n = safeIndex xs (n-1)
 
 ------------------------------------------------------------------------------
 -- Ex 4: below you'll find the Logger monad from the lectures.
@@ -141,7 +154,12 @@ msg s = Logger [s] ()
 
 -- Implement this:
 binom :: Integer -> Integer -> Logger Integer
-binom n k = undefined
+binom n 0 = msg ("B("++show n++",0)") >> return 1
+binom 0 k = msg ("B(0,"++show k++")") >> return 0
+binom n k = do x <- binom (n-1) (k-1)
+               y <- binom (n-1) k
+               msg ("B("++show n++","++show k++")")
+               return $ x + y
 
 ------------------------------------------------------------------------------
 -- Ex 5: using the State monad, write the operation update that first
@@ -153,7 +171,10 @@ binom n k = undefined
 --    ==> ((),7)
 
 update :: State Int ()
-update = undefined
+update = do old <- get
+            put (2*old)
+            older <- get
+            put (older+1)        
 
 ------------------------------------------------------------------------------
 -- Ex 6: using the State monad, walk through a list and add up all the
@@ -168,8 +189,12 @@ update = undefined
 --    ==> (4,10)
 
 lengthAndSum :: [Int] -> State Int Int
-lengthAndSum xs = undefined
-
+lengthAndSum [] = return 0
+lengthAndSum (x:xs) = do 
+  size <- lengthAndSum xs
+  modify (+x)
+  return (size +1)
+                         
 ------------------------------------------------------------------------------
 -- Ex 7: Let's use a state of type [a] to keep track of which elements
 -- we've seen an odd number of times (1, 3, 5, ...)
@@ -186,6 +211,11 @@ lengthAndSum xs = undefined
 
 oddUpdate :: Eq a => a -> State [a] ()
 oddUpdate x = undefined
+--oddUpdate x = do
+  --old <- get
+  --when(elem x old) modify (:x)
+--  modify (delete x)
+  
 
 ------------------------------------------------------------------------------
 -- Ex 8: Define the operation oddsOp, so that the function odds
@@ -251,7 +281,13 @@ safeDiv x 0.0 = Nothing
 safeDiv x y = Just (x/y)
 
 mapM2 :: Monad m => (a -> b -> m c) -> [a] -> [b] -> m [c]
-mapM2 op xs ys = undefined
+mapM2 op xs [] = return []
+mapM2 op [] ys = return []
+mapM2 op (x:xs) (y:ys) = do 
+  fxy <- op x y
+  fs <- mapM2 op xs ys
+  return (fxy: fs)
+                             
 
 ------------------------------------------------------------------------------
 -- Ex 11&12: Funnykiztan has cities that are named with by integers
@@ -340,7 +376,14 @@ dfs cities i = undefined
 -- PS. once again the tests don't care about the order of results
 
 orderedPairs :: [Int] -> [(Int,Int)]
-orderedPairs xs = undefined
+orderedPairs xs = do
+  let index = [0..length xs-1]
+  ai <- index
+  bi <- index
+  let a = xs !! ai
+      b = xs !! bi
+  if a<b && ai<bi then [(a,b)]
+  else []
 
 ------------------------------------------------------------------------------
 -- Ex 14: Using the list monad, produce a list of all pairs of
@@ -425,6 +468,11 @@ instance Applicative Result where
   (<*>) = ap
 
 instance Monad Result where
+  return = MkResult
+  fail s = Failure s
+  MkResult a >>= f  = f a
+  NoResult   >>= _  = NoResult
+  Failure x  >>= _  = Failure x
   -- implement return and >>=
 
 ------------------------------------------------------------------------------

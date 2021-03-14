@@ -1,5 +1,7 @@
 Introduction to Functional Programming, exercises
 =================================================
+ Course exercies for a Functional Programming course using Haskell.
+ Also contains the original commit history of the course repo.
 
 Getting started
 ---------------
